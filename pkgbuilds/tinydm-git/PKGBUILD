@@ -1,0 +1,27 @@
+pkgname=tinydm-git
+pkgver=r46.0689b94
+pkgrel=1
+pkgdesc="Tiny wayland / x11 session starter for single user machines"
+arch=('any')
+url="https://gitlab.postmarketos.org/postmarketOS/tinydm"
+license=('GPL3')
+depends=('bash')
+makedepends=('git' 'make')
+source=("git+https://gitlab.postmarketos.org/postmarketOS/tinydm.git")
+md5sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/tinydm"
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+prepare() {
+  cd "$srcdir/tinydm"
+  sed -i 's/User=10000/User=alarm/' tinydm.service
+  sed -i 's/Group=10000/Group=alarm/' tinydm.service
+}
+
+package() {
+  cd "$srcdir/tinydm"
+  make DESTDIR="$pkgdir" OPENRC=0 SYSTEMD=1 install
+}

@@ -1,0 +1,6 @@
+# Build artifacts
+work/
+output/
+
+# User-specific config (contains network credentials)
+network.config
