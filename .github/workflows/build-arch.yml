@@ -1,0 +1,44 @@
+name: Build Arch Linux ARM
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Free up disk space
+      run: |
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/ghc
+        sudo rm -rf /opt/hostedtoolcache/CodeQL
+        sudo docker image prune --all --force
+        
+    - name: Create empty network config
+      run: |
+        cp example-network.config network.config
+        
+    - name: Build Image
+      run: |
+        sudo ./build.sh
+        
+    - name: Compress artifacts
+      run: |
+        # Use sparse compression to handle the 4GB root.img efficiently
+        tar -Sczvf daisy-archlinux.tar.gz -C output .
+        
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: daisy-archlinux-images
+        path: daisy-archlinux.tar.gz
+        retention-days: 7
