@@ -180,7 +180,7 @@ install_deps() {
             libssl-dev libelf-dev libncurses-dev \
             wget curl git rsync cpio gzip xz-utils \
             dosfstools e2fsprogs mount \
-            android-tools-mkbootimg android-tools-fsutils \
+            mkbootimg android-sdk-libsparse-utils \
             libarchive-tools \
             debootstrap
 
