@@ -175,6 +175,7 @@ install_deps() {
         apt-get update
         apt-get install -y \
             build-essential gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu \
+            gcc-arm-none-eabi binutils-arm-none-eabi \
             binfmt-support qemu-user-static \
             device-tree-compiler python3 bc flex bison \
             libssl-dev libelf-dev libncurses-dev \
@@ -188,6 +189,7 @@ install_deps() {
         # Fedora host
         dnf install -y \
             @development-tools gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu \
+            arm-none-eabi-gcc arm-none-eabi-binutils \
             qemu-user-static \
             dtc python3 bc flex bison \
             openssl-devel elfutils-libelf-devel ncurses-devel \
