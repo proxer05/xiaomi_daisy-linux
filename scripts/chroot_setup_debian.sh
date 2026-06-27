@@ -108,30 +108,17 @@ if [[ "${WITH_PXVIRT}" == "true" ]]; then
 
     apt-get update
 
-    # 2. Install ifupdown2 (required by Proxmox for network management)
-    echo "Installing ifupdown2..."
+    # 2. Install ifupdown2 + dnsmasq (required by Proxmox for network management)
+    echo "Installing ifupdown2 and dnsmasq..."
     # Disable NetworkManager if present
     systemctl disable NetworkManager.service 2>/dev/null || true
     systemctl stop NetworkManager.service 2>/dev/null || true
 
-    apt-get install -y ifupdown2
+    apt-get install -y ifupdown2 dnsmasq
     rm -f /etc/network/interfaces.new 2>/dev/null || true
 
-    # Configure network interfaces for PXVIRT
-    # USB gadget is managed by systemd-networkd for DHCP, but we'll define a bridge stub for Proxmox GUI
-    cat > /etc/network/interfaces << 'IFACE_EOF'
-# Loopback
-auto lo
-iface lo inet loopback
-
-# Proxmox default bridge (requires manual assignment of physical ports like eth0 in GUI)
-auto vmbr0
-iface vmbr0 inet static
-    address 172.16.42.2/24
-    bridge-ports none
-    bridge-stp off
-    bridge-fd 0
-IFACE_EOF
+    # Note: /etc/network/interfaces and /etc/dnsmasq.d/ config are written by
+    # configure_rootfs_debian.sh which has access to the network.config variables.
 
     # 3. Install backports dependencies explicitly
     echo "Installing dependencies from backports..."

@@ -31,14 +31,15 @@ USB_DHCP_POOL_OFFSET="${USB_DHCP_POOL_OFFSET:-100}"
 USB_DHCP_POOL_SIZE="${USB_DHCP_POOL_SIZE:-50}"
 USB_DNS="${USB_DNS:-8.8.8.8 8.8.4.4}"
 VMBR_ADDRESS="${VMBR_ADDRESS:-10.10.10.1/24}"
-VMBR_DHCP_POOL_OFFSET="${VMBR_DHCP_POOL_OFFSET:-100}"
-VMBR_DHCP_POOL_SIZE="${VMBR_DHCP_POOL_SIZE:-100}"
-VMBR_DNS="${VMBR_DNS:-8.8.8.8 8.8.4.4}"
+NETMAP_HOME_RANGE="${NETMAP_HOME_RANGE:-192.168.1.200/26}"
 TIMEZONE="${TIMEZONE:-UTC}"
 
 # Derive the bare IP (without CIDR suffix) for /etc/hosts
 WLAN_IP="${WLAN_ADDRESS%%/*}"
 USB_IP="${USB_ADDRESS%%/*}"
+VMBR_IP="${VMBR_ADDRESS%%/*}"
+VMBR_SUBNET="${VMBR_ADDRESS##*/}"
+VMBR_NETWORK="$(echo ${VMBR_IP} | sed 's/\.[0-9]*$/.0/')/${VMBR_SUBNET}"
 
 if [[ ! -d "${ROOTFS}" ]]; then
     echo "ERROR: Rootfs path does not exist: ${ROOTFS}"
@@ -122,29 +123,56 @@ Name=eth*
 DHCP=yes
 EOF
 
-# Proxmox Container Bridge (vmbr0) — standalone NAT bridge for LXC/VMs
+# Proxmox Container Bridge (vmbr0) — NETMAP networking
+# Note: vmbr0 is now managed by ifupdown2 in /etc/network/interfaces,
+# NOT by systemd-networkd. This gives containers real IPs on the home
+# Wi-Fi network via NETMAP (based on ThomasRives/Proxmox-over-wifi).
 if [[ "${WITH_PXVIRT}" == "true" ]]; then
-cat > "${ROOTFS}/etc/systemd/network/40-vmbr0.netdev" << 'EOF'
-[NetDev]
-Name=vmbr0
-Kind=bridge
+
+# Write /etc/network/interfaces with NETMAP rules
+cat > "${ROOTFS}/etc/network/interfaces" << EOF
+auto lo
+iface lo inet loopback
+
+auto wlan0
+iface wlan0 inet static
+    address ${WLAN_ADDRESS}
+    gateway ${WLAN_GATEWAY}
+    wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf
+
+auto vmbr0
+iface vmbr0 inet static
+    address ${VMBR_ADDRESS}
+    bridge-ports none
+    bridge-stp off
+    bridge-fd 0
+    post-up echo 1 > /proc/sys/net/ipv4/ip_forward
+    post-up iptables -t nat -A POSTROUTING -s '${VMBR_NETWORK}' -o wlan0 -j NETMAP --to '${NETMAP_HOME_RANGE}'
+    post-up iptables -t nat -A PREROUTING -d '${NETMAP_HOME_RANGE}' -j NETMAP --to '${VMBR_NETWORK}'
+    post-up ip route add local '${NETMAP_HOME_RANGE}' dev wlan0
+    post-up iptables -t raw -I PREROUTING -i fwbr+ -j CT --zone 1
+    post-down iptables -t nat -D POSTROUTING -s '${VMBR_NETWORK}' -o wlan0 -j NETMAP --to '${NETMAP_HOME_RANGE}'
+    post-down iptables -t nat -D PREROUTING -d '${NETMAP_HOME_RANGE}' -j NETMAP --to '${VMBR_NETWORK}'
+    post-down ip route del local '${NETMAP_HOME_RANGE}' dev wlan0
+    post-down iptables -t raw -D PREROUTING -i fwbr+ -j CT --zone 1
 EOF
 
-cat > "${ROOTFS}/etc/systemd/network/40-vmbr0.network" << EOF
-[Match]
-Name=vmbr0
-
-[Network]
-Address=${VMBR_ADDRESS}
-DHCPServer=yes
-IPMasquerade=ipv4
-
-[DHCPServer]
-PoolOffset=${VMBR_DHCP_POOL_OFFSET}
-PoolSize=${VMBR_DHCP_POOL_SIZE}
-EmitDNS=yes
-DNS=${VMBR_DNS}
+# Configure dnsmasq to serve DHCP on vmbr0
+mkdir -p "${ROOTFS}/etc/dnsmasq.d"
+cat > "${ROOTFS}/etc/dnsmasq.d/vmbr0.conf" << EOF
+# DHCP for Proxmox containers on vmbr0
+interface=vmbr0
+except-interface=lo
+except-interface=wlan0
+bind-interfaces
+dhcp-range=10.10.10.100,10.10.10.200,24h
+dhcp-option=option:router,${VMBR_IP}
+dhcp-option=option:dns-server,${WLAN_DNS// /,}
 EOF
+
+# Enable dnsmasq via manual symlink (systemctl enable doesn't work in chroot)
+mkdir -p "${ROOTFS}/etc/systemd/system/multi-user.target.wants"
+ln -sf /lib/systemd/system/dnsmasq.service "${ROOTFS}/etc/systemd/system/multi-user.target.wants/dnsmasq.service"
 
 cat > "${ROOTFS}/usr/local/bin/pxvirt-firstboot.sh" << 'PVE_EOF'
 #!/bin/bash

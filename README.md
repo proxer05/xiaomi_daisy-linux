@@ -71,13 +71,30 @@ cp example-network.config network.config
 
 | Variable | Description | Default |
 |----------|-------------|---------|
+| `WIFI_SSID` | Your Wi-Fi network name | `MyWiFiNetwork` |
+| `WIFI_PASS` | Your Wi-Fi password | `MyWiFiPassword` |
 | `WIFI_COUNTRY` | ISO 3166-1 country code for regulatory domain | `US` |
 | `WLAN_ADDRESS` | Static IP for Wi-Fi interface (CIDR) | `192.168.1.100/24` |
 | `WLAN_GATEWAY` | Wi-Fi default gateway | `192.168.1.1` |
 | `WLAN_DNS` | DNS servers for Wi-Fi | `8.8.8.8 8.8.4.4` |
 | `USB_ADDRESS` | Static IP for USB RNDIS gadget (CIDR) | `172.16.42.1/24` |
-| `VMBR_ADDRESS` | Proxmox bridge subnet (CIDR) | `10.10.10.1/24` |
+| `VMBR_ADDRESS` | Internal Proxmox bridge subnet (CIDR) | `10.10.10.1/24` |
+| `NETMAP_HOME_RANGE` | Home network range for 1:1 container mapping | `192.168.1.200/26` |
 | `TIMEZONE` | System timezone | `UTC` |
+
+### NETMAP Container Networking (PXVIRT)
+
+With `--with-pxvirt`, containers get **real IPs on your home Wi-Fi network** using 1:1 NETMAP NAT. No port forwarding or reverse proxy required!
+
+The `NETMAP_HOME_RANGE` variable reserves a block of IPs on your home network for containers. The default `192.168.1.200/26` maps like this:
+
+| Container Internal IP | Home Network IP | Access from any device |
+|---|---|---|
+| `10.10.10.100` | `192.168.1.200` | `http://192.168.1.200:8080` |
+| `10.10.10.105` | `192.168.1.205` | `http://192.168.1.205:8080` |
+| `10.10.10.115` | `192.168.1.215` | `http://192.168.1.215:8080` |
+
+> **Note:** Make sure the NETMAP range doesn't overlap with other devices on your network (routers, printers, etc).
 
 ## Build Options
 
