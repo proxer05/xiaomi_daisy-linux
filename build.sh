@@ -88,7 +88,6 @@ SKIP_KERNEL=false
 SKIP_ROOTFS=false
 SKIP_LK2ND=false
 WITH_PLASMA=false
-WITH_PLASMA=false
 
 ###############################################################################
 # Argument parsing
@@ -100,7 +99,6 @@ while [[ $# -gt 0 ]]; do
         --skip-rootfs)  SKIP_ROOTFS=true;  shift ;;
         --skip-lk2nd)   SKIP_LK2ND=true;  shift ;;
         --with-plasma)  WITH_PLASMA=true; shift ;;
-        --rootfs-size)  ROOTFS_SIZE_MB="$2"; shift 2 ;;
         --rootfs-size)  ROOTFS_SIZE_MB="$2"; shift 2 ;;
         --kernel-branch) KERNEL_BRANCH="$2"; shift 2 ;;
         --help)
@@ -177,14 +175,18 @@ install_deps() {
         apt-get update
         apt-get install -y \
             build-essential gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu \
-            gcc-arm-none-eabi binutils-arm-none-eabi \
+            gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi \
             binfmt-support qemu-user-static \
             device-tree-compiler python3 bc flex bison \
             libssl-dev libelf-dev libncurses-dev \
             wget curl git rsync cpio gzip xz-utils \
             dosfstools e2fsprogs mount \
-            mkbootimg android-sdk-libsparse-utils \
             libarchive-tools
+            
+        # Package names for Android tools changed between Ubuntu 22.04 and 24.04
+        apt-get install -y mkbootimg || apt-get install -y android-tools-mkbootimg
+        apt-get install -y android-sdk-libsparse-utils || apt-get install -y android-tools-fsutils
+
 
     elif command -v dnf &>/dev/null; then
         # Fedora host

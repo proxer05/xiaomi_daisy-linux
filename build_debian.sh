@@ -24,7 +24,6 @@
 #   --skip-lk2nd       Skip lk2nd compilation (use pre-built or skip)
 #   --with-pxvirt      Install PXVIRT (Proxmox VE for ARM64)
 #   --rootfs-size SIZE  Root filesystem size in MB (default: 8192)
-#   --rootfs-size SIZE  Root filesystem size in MB (default: 8192)
 #   --kernel-branch BR  Kernel git branch (default: master)
 #   --help             Show this help
 #
@@ -87,7 +86,6 @@ SKIP_KERNEL=false
 SKIP_ROOTFS=false
 SKIP_LK2ND=false
 WITH_PXVIRT=false
-WITH_PXVIRT=false
 
 ###############################################################################
 # Argument parsing
@@ -99,7 +97,6 @@ while [[ $# -gt 0 ]]; do
         --skip-rootfs)  SKIP_ROOTFS=true;  shift ;;
         --skip-lk2nd)   SKIP_LK2ND=true;  shift ;;
         --with-pxvirt)  WITH_PXVIRT=true;  shift ;;
-        --rootfs-size)  ROOTFS_SIZE_MB="$2"; shift 2 ;;
         --rootfs-size)  ROOTFS_SIZE_MB="$2"; shift 2 ;;
         --kernel-branch) KERNEL_BRANCH="$2"; shift 2 ;;
         --help)
@@ -175,15 +172,19 @@ install_deps() {
         apt-get update
         apt-get install -y \
             build-essential gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu \
-            gcc-arm-none-eabi binutils-arm-none-eabi \
+            gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi \
             binfmt-support qemu-user-static \
             device-tree-compiler python3 bc flex bison \
             libssl-dev libelf-dev libncurses-dev \
             wget curl git rsync cpio gzip xz-utils \
             dosfstools e2fsprogs mount \
-            mkbootimg android-sdk-libsparse-utils \
             libarchive-tools \
             debootstrap
+
+        # Package names for Android tools changed between Ubuntu 22.04 and 24.04
+        apt-get install -y mkbootimg || apt-get install -y android-tools-mkbootimg
+        apt-get install -y android-sdk-libsparse-utils || apt-get install -y android-tools-fsutils
+
 
     elif command -v dnf &>/dev/null; then
         # Fedora host
