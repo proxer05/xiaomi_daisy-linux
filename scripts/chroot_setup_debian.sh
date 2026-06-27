@@ -13,6 +13,13 @@ WITH_PXVIRT="${1:-false}"
 echo "=== Debian Bookworm ARM64 chroot setup ==="
 echo "    PXVIRT: ${WITH_PXVIRT}"
 
+# Prevent services from starting during package installation in chroot
+cat > /usr/sbin/policy-rc.d << 'EOF'
+#!/bin/sh
+exit 101
+EOF
+chmod +x /usr/sbin/policy-rc.d
+
 ###############################################################################
 # Configure APT sources
 ###############################################################################
@@ -157,6 +164,7 @@ fi
 echo "Cleaning up APT cache..."
 apt-get clean
 rm -rf /var/lib/apt/lists/*
+rm -f /usr/sbin/policy-rc.d
 
 echo ""
 echo "=== Debian chroot setup complete ==="
