@@ -187,6 +187,15 @@ install_deps() {
         apt-get install -y mkbootimg || apt-get install -y android-tools-mkbootimg
         apt-get install -y android-sdk-libsparse-utils || apt-get install -y android-tools-fsutils
 
+        # Fix Ubuntu 24.04 mkbootimg "ModuleNotFoundError: No module named 'gki'" bug
+        if command -v mkbootimg &>/dev/null; then
+            if ! mkbootimg --help &>/dev/null; then
+                echo "Patching broken mkbootimg on Ubuntu..."
+                wget -q https://launchpadlibrarian.net/810765814/mkbootimg -O $(which mkbootimg) || true
+                chmod +x $(which mkbootimg) || true
+            fi
+        fi
+
 
     elif command -v dnf &>/dev/null; then
         # Fedora host
