@@ -10,6 +10,9 @@ set -euo pipefail
 
 WITH_PXVIRT="${1:-false}"
 
+export DEBIAN_FRONTEND=noninteractive
+export APT_LISTCHANGES_FRONTEND=none
+
 echo "=== Debian Bookworm ARM64 chroot setup ==="
 echo "    PXVIRT: ${WITH_PXVIRT}"
 
@@ -133,7 +136,10 @@ if [[ "${WITH_PXVIRT}" == "true" ]]; then
 
     # 4. Install PXVIRT packages
     echo "Installing PXVIRT packages (this may take a while)..."
-    apt-get install -y \
+    apt-get -y \
+        -o Dpkg::Options::="--force-confdef" \
+        -o Dpkg::Options::="--force-confold" \
+        install \
         proxmox-ve \
         pve-manager \
         qemu-server \
