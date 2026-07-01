@@ -74,7 +74,8 @@ apt-get install -y --no-install-recommends \
     python3 \
     passwd \
     systemd-timesyncd \
-    lsb-release
+    lsb-release \
+    xz-utils
 
 ###############################################################################
 # Enable services
