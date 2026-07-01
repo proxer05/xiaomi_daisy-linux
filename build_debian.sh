@@ -388,9 +388,9 @@ create_rootfs() {
     LOOP_DEV="$(losetup --find --show "${ROOTFS_IMG}")"
     mount "${LOOP_DEV}" "${ROOTFS_MOUNT}"
 
-    # Bootstrap Debian Bookworm
-    log "Running debootstrap (Debian Bookworm arm64)..."
-    debootstrap --arch=arm64 --foreign bookworm "${ROOTFS_MOUNT}" http://deb.debian.org/debian
+    # Bootstrap Debian Trixie
+    log "Running debootstrap (Debian Trixie arm64)..."
+    debootstrap --arch=arm64 --foreign trixie "${ROOTFS_MOUNT}" http://deb.debian.org/debian
 
     # Copy qemu for second stage on x86_64 host
     if [[ "$(uname -m)" == "x86_64" ]]; then

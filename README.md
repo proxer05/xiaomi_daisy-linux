@@ -1,8 +1,8 @@
 # Mainline Linux for Xiaomi Mi A2 Lite (daisy)
 
-Build system for creating **Arch Linux ARM** or **Debian Bookworm** images for the Xiaomi Mi A2 Lite (codename: `daisy`), based on the Qualcomm Snapdragon 625 (MSM8953) SoC.
+Build system for creating **Arch Linux ARM** or **Debian Trixie (13)** images for the Xiaomi Mi A2 Lite (codename: `daisy`), based on the Qualcomm Snapdragon 625 (MSM8953) SoC.
 
-The Debian variant optionally includes **PXVIRT** (Proxmox VE for ARM64), turning the phone into a pocket-sized hypervisor capable of running LXC containers.
+The Debian variant optionally includes Proxmox VE 9 for ARM64, turning the phone into a pocket-sized hypervisor capable of running LXC containers.
 
 ## Credits & References
 
@@ -10,7 +10,7 @@ The Debian variant optionally includes **PXVIRT** (Proxmox VE for ARM64), turnin
 - **[PostmarketOS](https://wiki.postmarketos.org/wiki/Xiaomi_Mi_A2_Lite_(xiaomi-daisy))** — Device tree, mainline kernel support, and lk2nd bootloader
 - **[msm8953-mainline](https://github.com/msm8953-mainline/linux)** — Mainline Linux kernel port for MSM8953 devices
 - **[Arch Linux ARM](https://archlinuxarm.org/)** — AArch64 root filesystem
-- **[PXVIRT / Proxmox VE ARM64](https://mirrors.lierfang.com/pxcloud/pxvirt/)** — Community Proxmox VE port for ARM64
+- **[Proxmox VE ARM64](https://github.com/eWloYW8/pve-arm64-builder)** — Community Proxmox VE 9 port for ARM64
 
 ## Device Specifications
 
@@ -45,7 +45,7 @@ sudo ./build.sh
 cd output/ && sudo ./flash_archlinux.sh
 ```
 
-### Debian Bookworm (with Proxmox VE)
+### Debian Trixie (with Proxmox VE 9)
 
 ```bash
 git clone <this-repo> && cd daisy-archlinux
@@ -117,7 +117,7 @@ sudo ./build.sh [OPTIONS]
 ```
 sudo ./build_debian.sh [OPTIONS]
 
-  --with-pxvirt        Install Proxmox VE (PXVIRT) for ARM64
+  --with-pxvirt        Install Proxmox VE 9 (PXVIRT) for ARM64
   --skip-deps          Skip installing host dependencies
   --skip-kernel        Skip kernel compilation
   --skip-rootfs        Skip rootfs creation

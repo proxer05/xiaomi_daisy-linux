@@ -13,7 +13,7 @@ WITH_PXVIRT="${1:-false}"
 export DEBIAN_FRONTEND=noninteractive
 export APT_LISTCHANGES_FRONTEND=none
 
-echo "=== Debian Bookworm ARM64 chroot setup ==="
+echo "=== Debian Trixie ARM64 chroot setup ==="
 echo "    PXVIRT: ${WITH_PXVIRT}"
 
 # Prevent services from starting during package installation in chroot
@@ -28,10 +28,9 @@ chmod +x /usr/sbin/policy-rc.d
 ###############################################################################
 echo "Configuring APT sources..."
 cat > /etc/apt/sources.list << 'EOF'
-deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
-deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
-deb http://deb.debian.org/debian bookworm-backports main contrib non-free non-free-firmware
-deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian trixie main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian trixie-updates main contrib non-free non-free-firmware
+deb http://security.debian.org/debian-security trixie-security main contrib non-free non-free-firmware
 EOF
 
 ###############################################################################
@@ -108,14 +107,22 @@ if [[ "${WITH_PXVIRT}" == "true" ]]; then
     echo "=========================================="
     echo ""
 
-    # 1. Add PXVIRT GPG key and repository
-    echo "Adding PXVIRT repository..."
-    curl -L https://mirrors.lierfang.com/pxcloud/lierfang.gpg \
-        -o /etc/apt/trusted.gpg.d/lierfang.gpg
+    # 1. Download and configure eWloYW8/pve-arm64-builder tarball repository
+    echo "Fetching latest PVE9 ARM64 repository from GitHub..."
+    TARBALL_URL=$(curl -sL https://api.github.com/repos/eWloYW8/pve-arm64-builder/releases/latest | grep "browser_download_url" | grep "proxmox-arm64" | cut -d '"' -f 4)
+    if [[ -z "${TARBALL_URL}" ]]; then
+        echo "Failed to fetch tarball URL. Using hardcoded fallback."
+        TARBALL_URL="https://github.com/eWloYW8/pve-arm64-builder/releases/download/20260601/proxmox-arm64-20260601.tar.xz"
+    fi
 
-    echo "deb https://mirrors.lierfang.com/pxcloud/pxvirt bookworm main" \
-        > /etc/apt/sources.list.d/pxvirt-sources.list
+    echo "Downloading ${TARBALL_URL}..."
+    wget -qO /tmp/pve-arm64.tar.xz "${TARBALL_URL}"
 
+    echo "Extracting PVE repository..."
+    mkdir -p /opt/pve-arm64
+    tar -xf /tmp/pve-arm64.tar.xz -C /opt/pve-arm64 --strip-components=1
+
+    echo "deb [trusted=yes arch=arm64] file:/opt/pve-arm64 ./" > /etc/apt/sources.list.d/pve-arm64-local.list
     apt-get update
 
     # 2. Install ifupdown2 + dnsmasq (required by Proxmox for network management)
@@ -130,9 +137,9 @@ if [[ "${WITH_PXVIRT}" == "true" ]]; then
     # Note: /etc/network/interfaces and /etc/dnsmasq.d/ config are written by
     # configure_rootfs_debian.sh which has access to the network.config variables.
 
-    # 3. Install backports dependencies explicitly
-    echo "Installing dependencies from backports..."
-    apt-get install -y -t bookworm-backports python3-virt-firmware
+    # 3. Install dependencies explicitly
+    echo "Installing python3-virt-firmware..."
+    apt-get install -y python3-virt-firmware
 
     # 4. Install PXVIRT packages
     echo "Installing PXVIRT packages (this may take a while)..."
@@ -155,6 +162,12 @@ if [[ "${WITH_PXVIRT}" == "true" ]]; then
     echo " Login:  root / root (Linux PAM)"
     echo "=========================================="
     echo ""
+
+    echo "Cleaning up PVE install artifacts..."
+    rm -rf /opt/pve-arm64
+    rm -f /tmp/pve-arm64.tar.xz
+    rm -f /etc/apt/sources.list.d/pve-arm64-local.list
+    apt-get update
 
 else
     echo "Skipping PXVIRT installation (--with-pxvirt not set)."
